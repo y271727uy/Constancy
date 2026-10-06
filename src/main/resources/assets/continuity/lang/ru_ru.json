@@ -10,6 +10,6 @@
   "resourcePack.continuity.default.description": "Книжные полки, песчаник и стекло.",
   "resourcePack.continuity.glass_pane_culling_fix.name": "Исправленные грани панелей",
   "resourcePack.continuity.glass_pane_culling_fix.description": "Улучшенное отсечение граней стекла",
-  "modmenu.summaryTranslation.continuity": "Эффективные соединённые текстуры для Fabric.",
-  "modmenu.descriptionTranslation.continuity": "Continuity – мод для Fabric, основанный на современных API для обеспечения максимально эффективного опыта взаимодействия. Его предназначение – обеспечить поддержку всех наборов ресурсов, использующих формат соединённых текстур Optifine. Также Continuity поддерживает его формат светящихся текстур у моделей блоков и предметов."
+  "modmenu.summaryTranslation.continuity": "Совместимость соединённых текстур с CTM.",
+  "modmenu.descriptionTranslation.continuity": "Constancy обеспечивает совместимость идентификатора Continuity и передаёт обработку соединённых текстур модулю CTM."
 }

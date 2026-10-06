@@ -1,6 +1,5 @@
 plugins {
-	id 'team.cagayakegirls.scripts'
-	id 'dev.architectury.loom'
+	id 'dev.architectury.loom' version '1.13.469'
 	id 'maven-publish'
 }
 
@@ -34,30 +33,25 @@ repositories {
 	}
 
 	maven {
-		url "https://maven.su5ed.dev/releases"
+		name 'CurseMaven'
+		url 'https://www.cursemaven.com'
 	}
 }
 
 loom {
 	forge {
-		mixinConfig("continuity.mixins.json")
+		// CTM owns model wrapping; Continuity's legacy Fabric mixins are disabled.
 	}
 }
 
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	mappings loom.officialMojangMappings()
 	forge "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
 
-	modApi(include(forgifiedFabricApi.module("fabric-api-base", project.fabric_version, true)))
-	modApi(include(forgifiedFabricApi.module("fabric-renderer-api-v1", project.fabric_version, true)))
-	modApi(include(forgifiedFabricApi.module("fabric-renderer-indigo", project.fabric_version, true)))
-
-	modCompileOnly forgifiedFabricApi.module("fabric-block-view-api-v2", project.fabric_version, true)
-
-	compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"))
-	implementation(include("io.github.llamalad7:mixinextras-forge:${project.mixinextras_version}"))
+	modCompileOnly("curse.maven:ctm-267602:${project.ctm_file_id}")
+	modRuntimeOnly("curse.maven:ctm-267602:${project.ctm_file_id}")
 }
 
 processResources {

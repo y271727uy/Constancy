@@ -7,5 +7,5 @@
   "options.continuity.custom_block_layers": "Көйләнгән катламнар",
   "options.continuity.custom_block_layers.tooltip": "Көйләнгән блок катламнарын кушырга яки сүндерергә.",
   "modmenu.summaryTranslation.continuity": "Бу модны кулланып, Optifine-ның тоташтырылган текстуралары, җемелдек текстуралары, көйләнгән блок катламнары Optifine-сыз эшли.",
-  "modmenu.descriptionTranslation.continuity": "Continuity — Optifine тоташтырылган текстуралары форматын, OptiFine җемелдек текстуралар форматын (блок һәм предмет модельләре өчен генә) яки OptiFine-сыз эшләү өчен OptiFine көйләнгән блок катламнары форматын кулланучы ресурс җыелмаларын рөхсәт итә торган Fabric моды."
+  "modmenu.descriptionTranslation.continuity": "Constancy Continuity идентификаторы өчен ярашлылыкны саклый һәм тоташтырылган текстураларны CTM модулына тапшыра."
 }

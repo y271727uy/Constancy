@@ -1,13 +1,12 @@
 package org.thinkingstudio.constancy;
 
-import me.pepperbell.continuity.client.ContinuityClient;
 import net.minecraftforge.fml.IExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.network.NetworkConstants;
 
-@Mod(ContinuityClient.ID)
+@Mod("continuity")
 public class ContinuityStub {
 
     @SuppressWarnings("removal")

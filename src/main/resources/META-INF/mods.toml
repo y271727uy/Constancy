@@ -8,8 +8,7 @@ modId = "constancy"
 version = "${version}"
 displayName = "Constancy"
 description = '''
-Continuity unofficial Forge port.
-Constancy is a Forge mod that allows resource packs that use the OptiFine connected textures format, OptiFine emissive textures format (only for blocks and item models), or OptiFine custom block layers format to work without OptiFine.
+Constancy is a Forge compatibility mod that delegates connected textures, emissive rendering, and related model work to ConnectedTexturesMod (CTM).
 '''
 logoFile = "icon.png"
 logoBlur = false
@@ -21,12 +20,18 @@ modId = "continuity"
 version = "${version}"
 displayName = "Continuity (Stub)"
 description = '''
-Constancy stub-mod for compatibility with other mods.
-Continuity is a Fabric mod that allows resource packs that use the OptiFine connected textures format, OptiFine emissive textures format (only for blocks and item models), or OptiFine custom block layers format to work without OptiFine.
+Constancy compatibility stub for mods that check the legacy Continuity mod ID.
 '''
 logoFile = "assets/continuity/icon.png"
 logoBlur = false
 authors = "PepperCode1"
+
+[[dependencies.constancy]]
+modId = "ctm"
+mandatory = true
+versionRange = "[1.20.1-1.1.10,)"
+ordering = "AFTER"
+side = "CLIENT"
 
 [[dependencies.constancy]]
 modId = "minecraft"
