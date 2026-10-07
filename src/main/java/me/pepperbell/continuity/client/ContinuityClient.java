@@ -40,6 +40,7 @@ import me.pepperbell.continuity.client.properties.overlay.RepeatOverlayCtmProper
 import me.pepperbell.continuity.client.properties.overlay.StandardOverlayCtmProperties;
 import me.pepperbell.continuity.client.resource.CustomBlockLayers;
 import me.pepperbell.continuity.client.resource.ModelWrappingHandler;
+import me.pepperbell.continuity.client.config.ConstancyEmbeddiumOptions;
 import me.pepperbell.continuity.client.util.RenderUtil;
 import me.pepperbell.continuity.client.util.biome.BiomeHolderManager;
 import me.pepperbell.continuity.client.util.biome.BiomeRetriever;
@@ -58,6 +59,7 @@ public class ContinuityClient {
 		ProcessingDataKeyRegistryImpl.INSTANCE.init(modEventBus);
 		BiomeHolderManager.init();
 		BiomeRetriever.init();
+		ConstancyEmbeddiumOptions.register();
 		ProcessingDataKeys.init();
 		ModelWrappingHandler.init(modEventBus);
 		RenderUtil.ReloadListener.init(modEventBus);

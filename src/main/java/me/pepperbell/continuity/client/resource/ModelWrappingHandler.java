@@ -28,30 +28,38 @@ public class ModelWrappingHandler {
 	private final boolean wrapCtm;
 	private final boolean wrapEmissive;
 	private final ImmutableMap<ModelIdentifier, BlockState> blockStateModelIds;
+	private final ImmutableSet<BlockState> ctmAffectedStates;
 
-	private ModelWrappingHandler(boolean wrapCtm, boolean wrapEmissive) {
+	private ModelWrappingHandler(boolean wrapCtm, boolean wrapEmissive, ImmutableSet<BlockState> ctmAffectedStates) {
 		this.wrapCtm = wrapCtm;
 		this.wrapEmissive = wrapEmissive;
-		blockStateModelIds = createBlockStateModelIdMap();
+		this.ctmAffectedStates = ctmAffectedStates;
+		// Only build the map when CTM is actually wrapping something
+		this.blockStateModelIds = wrapCtm ? createBlockStateModelIdMap(ctmAffectedStates) : ImmutableMap.of();
 	}
 
 	@Nullable
-	public static ModelWrappingHandler create(boolean wrapCtm, boolean wrapEmissive) {
+	public static ModelWrappingHandler create(boolean wrapCtm, boolean wrapEmissive, ImmutableSet<BlockState> ctmAffectedStates) {
 		if (!wrapCtm && !wrapEmissive) {
 			return null;
 		}
-		return new ModelWrappingHandler(wrapCtm, wrapEmissive);
+		// When CTM is requested but no states are affected, don't wrap anything
+		if (wrapCtm && ctmAffectedStates.isEmpty()) {
+			wrapCtm = false;
+		}
+		if (!wrapCtm && !wrapEmissive) {
+			return null;
+		}
+		return new ModelWrappingHandler(wrapCtm, wrapEmissive, ctmAffectedStates);
 	}
 
-	private static ImmutableMap<ModelIdentifier, BlockState> createBlockStateModelIdMap() {
+	private static ImmutableMap<ModelIdentifier, BlockState> createBlockStateModelIdMap(ImmutableSet<BlockState> affectedStates) {
 		ImmutableMap.Builder<ModelIdentifier, BlockState> builder = ImmutableMap.builder();
-		// Match code of BakedModelManager#bake
-		for (Block block : Registries.BLOCK) {
-			Identifier blockId = block.getRegistryEntry().registryKey().getValue();
-			for (BlockState state : block.getStateManager().getStates()) {
-				ModelIdentifier modelId = BlockModels.getModelId(blockId, state);
-				builder.put(modelId, state);
-			}
+		// Only index block states that are actually affected by CTM
+		for (BlockState state : affectedStates) {
+			Identifier blockId = state.getBlock().getRegistryEntry().registryKey().getValue();
+			ModelIdentifier modelId = BlockModels.getModelId(blockId, state);
+			builder.put(modelId, state);
 		}
 		return builder.build();
 	}

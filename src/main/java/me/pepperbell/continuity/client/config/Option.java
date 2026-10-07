@@ -59,4 +59,47 @@ public interface Option<T> {
 			}
 		}
 	}
+
+	class IconOption extends BaseOption<IconChoice> {
+		public IconOption(String key, IconChoice defaultValue) {
+			super(key, defaultValue);
+		}
+
+		@Override
+		public JsonElement toJson() {
+			return new JsonPrimitive(get().getSerializedName());
+		}
+
+		@Override
+		public void fromJson(JsonElement json) throws JsonParseException {
+			if (!json.isJsonPrimitive()) {
+				throw new JsonParseException("Json must be a primitive");
+			}
+			set(IconChoice.fromSerializedName(json.getAsString()));
+		}
+	}
+
+	enum IconChoice {
+		CONSTANCY("constancy"),
+		CONTINUITY("continuity");
+
+		private final String serializedName;
+
+		IconChoice(String serializedName) {
+			this.serializedName = serializedName;
+		}
+
+		public String getSerializedName() {
+			return serializedName;
+		}
+
+		public static IconChoice fromSerializedName(String name) throws JsonParseException {
+			for (IconChoice choice : values()) {
+				if (choice.serializedName.equalsIgnoreCase(name)) {
+					return choice;
+				}
+			}
+			throw new JsonParseException("Unknown icon choice: " + name);
+		}
+	}
 }

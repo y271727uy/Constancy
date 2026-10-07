@@ -7,7 +7,7 @@
     "AtlasLoaderMixin",
     "BakedModelManagerMixin",
     "BlockModelsMixin",
-    "FallingBlockEntityRendererMixin",
+    "EmbeddiumTabHeaderWidgetMixin",
     "IdentifierMixin",
     "LifecycledResourceManagerImplMixin",
     "ModelLoaderMixin",

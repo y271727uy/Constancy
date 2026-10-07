@@ -36,6 +36,9 @@ repositories {
 	maven {
 		url "https://maven.su5ed.dev/releases"
 	}
+	flatDir {
+		dirs 'lib'
+	}
 }
 
 loom {
@@ -58,6 +61,11 @@ dependencies {
 
 	compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"))
 	implementation(include("io.github.llamalad7:mixinextras-forge:${project.mixinextras_version}"))
+
+	modImplementation 'embeddium:embeddium-0.3.31+mc1.20.1'
+	modImplementation 'ferritecore:ferritecore-6.0.1-forge'
+	compileOnly 'modernfix:modernfix-forge-5.27.85+mc1.20.1'
+	modRuntimeOnly 'chloride:chloride-FORGE-mc1.20.1-v1.8.1-dev'
 }
 
 processResources {
@@ -88,6 +96,13 @@ jar {
 	}
 }
 
+// Minecraft 1.20.1 and Chloride target Java 17. Keep Gradle/buildSrc on the host JDK,
+// but run the game with the installed Java 17 toolchain.
+tasks.matching { it.name in ['runClient', 'runServer', 'runData'] }.configureEach {
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
 // configure the maven publication
 publishing {
 	publications {

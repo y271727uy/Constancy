@@ -7,15 +7,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.ImmutableSet;
 import org.jetbrains.annotations.Nullable;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import me.pepperbell.continuity.api.client.CachingPredicates;
 import me.pepperbell.continuity.client.mixinterface.ModelLoaderExtension;
 import me.pepperbell.continuity.client.model.QuadProcessors;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.SpriteAtlasManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.registry.Registries;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 
@@ -53,8 +58,29 @@ public class BakedModelManagerReloadExtension {
 
 		this.processorHolders = processorHolders;
 
-		ModelWrappingHandler wrappingHandler = ModelWrappingHandler.create(!processorHolders.isEmpty(), wrapEmissiveModels.get());
+		// Compute the set of block states actually affected by CTM processors
+		ImmutableSet<BlockState> ctmAffectedStates = computeAffectedBlockStates(processorHolders);
+
+		ModelWrappingHandler wrappingHandler = ModelWrappingHandler.create(!processorHolders.isEmpty(), wrapEmissiveModels.get(), ctmAffectedStates);
 		((ModelLoaderExtension) modelLoader).continuity$setModelWrappingHandler(wrappingHandler);
+	}
+
+	private static ImmutableSet<BlockState> computeAffectedBlockStates(List<QuadProcessors.ProcessorHolder> processorHolders) {
+		ImmutableSet.Builder<BlockState> builder = ImmutableSet.builder();
+		for (QuadProcessors.ProcessorHolder holder : processorHolders) {
+			CachingPredicates predicates = holder.predicates();
+			if (predicates.affectsBlockStates()) {
+				// Collect all block states that this processor affects
+				for (Block block : Registries.BLOCK) {
+					for (BlockState state : block.getStateManager().getStates()) {
+						if (predicates.affectsBlockState(state)) {
+							builder.add(state);
+						}
+					}
+				}
+			}
+		}
+		return builder.build();
 	}
 
 	public void apply() {

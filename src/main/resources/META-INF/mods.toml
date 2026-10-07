@@ -10,10 +10,12 @@ displayName = "Constancy"
 description = '''
 Continuity unofficial Forge port.
 Constancy is a Forge mod that allows resource packs that use the OptiFine connected textures format, OptiFine emissive textures format (only for blocks and item models), or OptiFine custom block layers format to work without OptiFine.
+
+This version was modified by y271727uy, Please do not report any issues to the upstream!
 '''
 logoFile = "icon.png"
 logoBlur = false
-authors = "TexTrue, PepperCode1"
+authors = "TexTrue, PepperCode1, y271727uy"
 displayURL = "https://github.com/ThinkingStudios/Constancy"
 
 [[mods]]
@@ -23,12 +25,28 @@ displayName = "Continuity (Stub)"
 description = '''
 Constancy stub-mod for compatibility with other mods.
 Continuity is a Fabric mod that allows resource packs that use the OptiFine connected textures format, OptiFine emissive textures format (only for blocks and item models), or OptiFine custom block layers format to work without OptiFine.
+
+This version was modified by y271727uy, Please do not report any issues to the upstream!
 '''
 logoFile = "assets/continuity/icon.png"
 logoBlur = false
-authors = "PepperCode1"
+authors = "PepperCode1, TexTrue, y271727uy"
 
 [[dependencies.constancy]]
 modId = "minecraft"
 mandatory = true
 versionRange = "[1.20.1]"
+
+[[dependencies.constancy]]
+modId = "embeddium"
+mandatory = true
+versionRange = "[0.3.31,)"
+ordering = "AFTER"
+side = "CLIENT"
+
+[[dependencies.constancy]]
+modId = "ferritecore"
+mandatory = true
+versionRange = "[6.0.1,)"
+ordering = "AFTER"
+side = "CLIENT"

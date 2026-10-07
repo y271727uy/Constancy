@@ -17,15 +17,20 @@ public class ResourceManagerHelper {
 
         modEventBus.<AddPackFindersEvent>addListener(event -> {
             if (event.getPackType() == resourceType) {
-                event.addRepositorySource(profileAdder -> profileAdder.accept(ResourcePackProfile.create(
-                        id.getPath(),
-                        displayName,
-                        false,
-                        (name) -> pack,
-                        event.getPackType(),
-                        ResourcePackProfile.InsertionPosition.TOP,
-                        ResourcePackSource.BUILTIN
-                )));
+                event.addRepositorySource(profileAdder -> {
+                    ResourcePackProfile profile = ResourcePackProfile.create(
+                            id.getPath(),
+                            displayName,
+                            false,
+                            (name) -> pack,
+                            event.getPackType(),
+                            ResourcePackProfile.InsertionPosition.TOP,
+                            ResourcePackSource.BUILTIN
+                    );
+                    if (profile != null) {
+                        profileAdder.accept(profile);
+                    }
+                });
             }
         });
     }

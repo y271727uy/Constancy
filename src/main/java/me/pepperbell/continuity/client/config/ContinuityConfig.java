@@ -39,6 +39,8 @@ public class ContinuityConfig {
 	public final Option.BooleanOption emissiveTextures = addOption(new Option.BooleanOption("emissive_textures", true));
 	public final Option.BooleanOption customBlockLayers = addOption(new Option.BooleanOption("custom_block_layers", true));
 	public final Option.BooleanOption useManualCulling = addOption(new Option.BooleanOption("use_manual_culling", true));
+	public final Option.IconOption configIcon = addOption(new Option.IconOption("config_icon", Option.IconChoice.CONSTANCY));
+	public final Option.IconOption configName = addOption(new Option.IconOption("config_name", Option.IconChoice.CONSTANCY));
 
 	public ContinuityConfig(File file) {
 		this.file = file;
