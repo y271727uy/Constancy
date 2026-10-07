@@ -5,6 +5,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -54,6 +55,24 @@ public final class QuadProcessors {
 		CACHE.clear();
 	}
 
+	/**
+	 * Clear all caches.
+	 * Public API for diagnostics and testing.
+	 */
+	public static void clearCache() {
+		CACHE.clear();
+	}
+
+	/**
+	 * Get the estimated number of cached block states.
+	 * Public API for diagnostics.
+	 *
+	 * @return The number of cached block states
+	 */
+	public static int getCacheSize() {
+		return CACHE.size();
+	}
+
 	public record ProcessorHolder(QuadProcessor processor, CachingPredicates predicates) {
 	}
 
@@ -67,21 +86,16 @@ public final class QuadProcessors {
 		public SpriteKeyCache apply(BlockState state) {
 			SpriteKeyCache innerCache;
 
+			// Fast path: optimistic read
 			long optimisticReadStamp = lock.tryOptimisticRead();
 			if (optimisticReadStamp != 0L) {
-				try {
-					// This map read could happen at the same time as a map write, so catch any exceptions.
-					// This is safe due to the map implementation used, which is guaranteed to not mutate the map during
-					// a read.
-					innerCache = map.get(state);
-					if (innerCache != null && lock.validate(optimisticReadStamp)) {
-						return innerCache;
-					}
-				} catch (Exception e) {
-					//
+				innerCache = tryOptimisticRead(state, optimisticReadStamp);
+				if (innerCache != null) {
+					return innerCache;
 				}
 			}
 
+			// Slow path: read lock
 			long readStamp = lock.readLock();
 			try {
 				innerCache = map.get(state);
@@ -105,12 +119,41 @@ public final class QuadProcessors {
 			return innerCache;
 		}
 
+		/**
+		 * Try to read from the map optimistically.
+		 * Returns null on validation failure or concurrent modification.
+		 * Separated into a method to avoid polluting the hot path with exception handling.
+		 */
+		@Nullable
+		private SpriteKeyCache tryOptimisticRead(BlockState state, long stamp) {
+			try {
+				// This map read could happen at the same time as a map write.
+				// This is safe due to the map implementation used, which is guaranteed to not mutate the map during a read.
+				SpriteKeyCache innerCache = map.get(state);
+				if (innerCache != null && lock.validate(stamp)) {
+					return innerCache;
+				}
+			} catch (Exception e) {
+				// Concurrent modification detected, fall back to locked read
+			}
+			return null;
+		}
+
 		public void clear() {
 			long writeStamp = lock.writeLock();
 			try {
 				map.values().forEach(SpriteKeyCache::clear);
 			} finally {
 				lock.unlockWrite(writeStamp);
+			}
+		}
+
+		public int size() {
+			long readStamp = lock.readLock();
+			try {
+				return map.size();
+			} finally {
+				lock.unlockRead(readStamp);
 			}
 		}
 	}
@@ -128,21 +171,16 @@ public final class QuadProcessors {
 		public Slice apply(Sprite sprite) {
 			Slice slice;
 
+			// Fast path: optimistic read
 			long optimisticReadStamp = lock.tryOptimisticRead();
 			if (optimisticReadStamp != 0L) {
-				try {
-					// This map read could happen at the same time as a map write, so catch any exceptions.
-					// This is safe due to the map implementation used, which is guaranteed to not mutate the map during
-					// a read.
-					slice = map.get(sprite);
-					if (slice != null && lock.validate(optimisticReadStamp)) {
-						return slice;
-					}
-				} catch (Exception e) {
-					//
+				slice = tryOptimisticRead(sprite, optimisticReadStamp);
+				if (slice != null) {
+					return slice;
 				}
 			}
 
+			// Slow path: read lock
 			long readStamp = lock.readLock();
 			try {
 				slice = map.get(sprite);
@@ -164,6 +202,26 @@ public final class QuadProcessors {
 			}
 
 			return slice;
+		}
+
+		/**
+		 * Try to read from the map optimistically.
+		 * Returns null on validation failure or concurrent modification.
+		 * Separated into a method to avoid polluting the hot path with exception handling.
+		 */
+		@Nullable
+		private Slice tryOptimisticRead(Sprite sprite, long stamp) {
+			try {
+				// This map read could happen at the same time as a map write.
+				// This is safe due to the map implementation used, which is guaranteed to not mutate the map during a read.
+				Slice slice = map.get(sprite);
+				if (slice != null && lock.validate(stamp)) {
+					return slice;
+				}
+			} catch (Exception e) {
+				// Concurrent modification detected, fall back to locked read
+			}
+			return null;
 		}
 
 		public void clear() {

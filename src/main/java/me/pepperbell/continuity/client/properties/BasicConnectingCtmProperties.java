@@ -74,9 +74,15 @@ public class BasicConnectingCtmProperties extends BaseCtmProperties {
 		TILE {
 			@Override
 			public boolean shouldConnect(BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, BlockState otherAppearanceState, BlockState otherState, BlockPos otherPos, Direction face, Sprite quadSprite) {
+				// Fast path: exact same state
 				if (appearanceState == otherAppearanceState) {
 					return true;
 				}
+				// Quick reject: different block type (avoids expensive sprite calculation)
+				if (appearanceState.getBlock() != otherAppearanceState.getBlock()) {
+					return false;
+				}
+				// Slow path: compare sprites (requires model query + cache lookup)
 				return quadSprite == SpriteCalculator.getSprite(otherAppearanceState, face);
 			}
 		},

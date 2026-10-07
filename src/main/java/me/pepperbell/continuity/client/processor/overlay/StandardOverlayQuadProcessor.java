@@ -217,56 +217,58 @@ public class StandardOverlayQuadProcessor extends AbstractQuadProcessor {
 		//     2
 		int applications = 0;
 
-		mutablePos.set(pos, directions[0]).move(lightFace);
-		BlockState appearanceState0;
-		if (!blockView.getBlockState(mutablePos).isOpaqueFullCube(blockView, mutablePos)) {
+		// Cache neighbor states to avoid repeated getBlockState calls
+		BlockState[] neighborStates = new BlockState[4];
+		BlockState[] appearanceStates = new BlockState[4];
+		
+		// Query all 4 edge neighbors once
+		for (int i = 0; i < 4; i++) {
+			mutablePos.set(pos, directions[i]);
+			BlockState neighborState = blockView.getBlockState(mutablePos);
+			
+			// Check if blocked by opaque full cube behind
+			mutablePos.move(lightFace);
+			if (blockView.getBlockState(mutablePos).isOpaqueFullCube(blockView, mutablePos)) {
+				neighborStates[i] = null;
+				appearanceStates[i] = null;
+			} else {
+				mutablePos.move(lightFace.getOpposite()); // Restore to neighbor pos
+				neighborStates[i] = neighborState;
+				appearanceStates[i] = neighborState.getAppearance(blockView, mutablePos, lightFace, state, pos);
+			}
+		}
+		
+		// Check overlay applications using cached states
+		BlockState appearanceState0 = appearanceStates[0];
+		if (appearanceState0 != null) {
 			mutablePos.set(pos, directions[0]);
-			BlockState state0 = blockView.getBlockState(mutablePos);
-			appearanceState0 = state0.getAppearance(blockView, mutablePos, lightFace, state, pos);
-			if (appliesOverlay(appearanceState0, state0, mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
+			if (appliesOverlay(appearanceState0, neighborStates[0], mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
 				applications |= 0b0001;
 			}
-		} else {
-			appearanceState0 = null;
 		}
 
-		mutablePos.set(pos, directions[1]).move(lightFace);
-		BlockState appearanceState1;
-		if (!blockView.getBlockState(mutablePos).isOpaqueFullCube(blockView, mutablePos)) {
+		BlockState appearanceState1 = appearanceStates[1];
+		if (appearanceState1 != null) {
 			mutablePos.set(pos, directions[1]);
-			BlockState state1 = blockView.getBlockState(mutablePos);
-			appearanceState1 = state1.getAppearance(blockView, mutablePos, lightFace, state, pos);
-			if (appliesOverlay(appearanceState1, state1, mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
+			if (appliesOverlay(appearanceState1, neighborStates[1], mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
 				applications |= 0b0010;
 			}
-		} else {
-			appearanceState1 = null;
 		}
 
-		mutablePos.set(pos, directions[2]).move(lightFace);
-		BlockState appearanceState2;
-		if (!blockView.getBlockState(mutablePos).isOpaqueFullCube(blockView, mutablePos)) {
+		BlockState appearanceState2 = appearanceStates[2];
+		if (appearanceState2 != null) {
 			mutablePos.set(pos, directions[2]);
-			BlockState state2 = blockView.getBlockState(mutablePos);
-			appearanceState2 = state2.getAppearance(blockView, mutablePos, lightFace, state, pos);
-			if (appliesOverlay(appearanceState2, state2, mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
+			if (appliesOverlay(appearanceState2, neighborStates[2], mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
 				applications |= 0b0100;
 			}
-		} else {
-			appearanceState2 = null;
 		}
 
-		mutablePos.set(pos, directions[3]).move(lightFace);
-		BlockState appearanceState3;
-		if (!blockView.getBlockState(mutablePos).isOpaqueFullCube(blockView, mutablePos)) {
+		BlockState appearanceState3 = appearanceStates[3];
+		if (appearanceState3 != null) {
 			mutablePos.set(pos, directions[3]);
-			BlockState state3 = blockView.getBlockState(mutablePos);
-			appearanceState3 = state3.getAppearance(blockView, mutablePos, lightFace, state, pos);
-			if (appliesOverlay(appearanceState3, state3, mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
+			if (appliesOverlay(appearanceState3, neighborStates[3], mutablePos, blockView, appearanceState, state, pos, lightFace, quadSprite)) {
 				applications |= 0b1000;
 			}
-		} else {
-			appearanceState3 = null;
 		}
 
 		return switch (applications) {

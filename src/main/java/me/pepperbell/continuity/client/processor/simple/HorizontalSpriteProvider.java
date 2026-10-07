@@ -47,11 +47,31 @@ public class HorizontalSpriteProvider implements SpriteProvider {
 	}
 
 	protected int getConnections(Direction[] directions, BlockPos.Mutable mutablePos, BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, Direction face, Sprite quadSprite) {
+		// Cache the 2 horizontal neighbor states
+		BlockState[] neighborStates = new BlockState[2];
+		BlockState[] neighborAppearances = new BlockState[2];
+		
+		for (int i = 0; i < 2; i++) {
+			mutablePos.set(pos, directions[i * 2]);
+			BlockState neighborState = blockView.getBlockState(mutablePos);
+			neighborStates[i] = neighborState;
+			neighborAppearances[i] = neighborState.getAppearance(blockView, mutablePos, face, state, pos);
+		}
+		
 		int connections = 0;
 		for (int i = 0; i < 2; i++) {
 			mutablePos.set(pos, directions[i * 2]);
-			if (connectionPredicate.shouldConnect(blockView, appearanceState, state, pos, mutablePos, face, quadSprite, innerSeams)) {
-				connections |= 1 << i;
+			if (connectionPredicate.shouldConnect(blockView, appearanceState, state, pos, neighborAppearances[i], neighborStates[i], mutablePos, face, quadSprite)) {
+				if (!innerSeams) {
+					connections |= 1 << i;
+				} else {
+					// Check inner seam
+					mutablePos.move(face);
+					if (!connectionPredicate.shouldConnect(blockView, appearanceState, state, pos, mutablePos, face, quadSprite)) {
+						connections |= 1 << i;
+					}
+					mutablePos.move(face.getOpposite());
+				}
 			}
 		}
 		return connections;

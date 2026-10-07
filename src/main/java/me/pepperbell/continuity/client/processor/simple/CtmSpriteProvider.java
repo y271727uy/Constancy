@@ -64,13 +64,35 @@ public class CtmSpriteProvider implements SpriteProvider {
 	}
 
 	public static int getConnections(Direction[] directions, ConnectionPredicate connectionPredicate, boolean innerSeams, BlockPos.Mutable mutablePos, BlockRenderView blockView, BlockState appearanceState, BlockState state, BlockPos pos, Direction face, Sprite quadSprite) {
+		// Cache neighbor states for the 4 edge directions (reduces repeated getBlockState/getAppearance calls)
+		BlockState[] neighborStates = new BlockState[4];
+		BlockState[] neighborAppearances = new BlockState[4];
+		
 		int connections = 0;
+		// First pass: check edge connections and cache neighbor states
 		for (int i = 0; i < 4; i++) {
 			mutablePos.set(pos, directions[i]);
-			if (connectionPredicate.shouldConnect(blockView, appearanceState, state, pos, mutablePos, face, quadSprite, innerSeams)) {
-				connections |= 1 << (i * 2);
+			BlockState neighborState = blockView.getBlockState(mutablePos);
+			BlockState neighborAppearance = neighborState.getAppearance(blockView, mutablePos, face, state, pos);
+			
+			neighborStates[i] = neighborState;
+			neighborAppearances[i] = neighborAppearance;
+			
+			if (connectionPredicate.shouldConnect(blockView, appearanceState, state, pos, neighborAppearance, neighborState, mutablePos, face, quadSprite)) {
+				if (!innerSeams) {
+					connections |= 1 << (i * 2);
+				} else {
+					// Check inner seam
+					mutablePos.move(face);
+					if (!connectionPredicate.shouldConnect(blockView, appearanceState, state, pos, mutablePos, face, quadSprite)) {
+						connections |= 1 << (i * 2);
+					}
+					mutablePos.move(face.getOpposite()); // Restore position
+				}
 			}
 		}
+		
+		// Second pass: check corner connections (only if both adjacent edges connect)
 		for (int i = 0; i < 4; i++) {
 			int index1 = i;
 			int index2 = (i + 1) % 4;

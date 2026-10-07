@@ -66,17 +66,66 @@ public class ModelWrappingHandler {
 
 	public BakedModel wrap(@Nullable BakedModel model, Identifier modelId) {
 		if (model != null && !model.isBuiltin() && !modelId.equals(ModelLoader.MISSING_ID)) {
-			if (wrapCtm) {
-				if (modelId instanceof ModelIdentifier) {
-					BlockState state = blockStateModelIds.get(modelId);
-					if (state != null) {
-						model = new CtmBakedModel(model, state);
-					}
-				}
+			// Injection point 1: CTM wrapping (modpack core can replace this)
+			model = wrapCtm(model, modelId);
+			// Injection point 2: Emissive wrapping (modpack core can replace this)
+			model = wrapEmissive(model);
+		}
+		return model;
+	}
+
+	/**
+	 * Injection point: Wrap a model with CTM processing.
+	 * Modpack core can override this to use alternative caching strategies.
+	 *
+	 * @param model The model to wrap
+	 * @param modelId The model identifier
+	 * @return The wrapped model, or the original if no wrapping is needed
+	 */
+	protected BakedModel wrapCtm(BakedModel model, Identifier modelId) {
+		if (wrapCtm && modelId instanceof ModelIdentifier) {
+			BlockState state = getBlockStateForModel((ModelIdentifier) modelId);
+			if (state != null) {
+				return createCtmModel(model, state);
 			}
-			if (wrapEmissive) {
-				model = new EmissiveBakedModel(model);
-			}
+		}
+		return model;
+	}
+
+	/**
+	 * Injection point: Look up the block state for a model identifier.
+	 * Modpack core can override this to use ModernFix's cache.
+	 *
+	 * @param modelId The model identifier
+	 * @return The block state, or null if not found
+	 */
+	@Nullable
+	protected BlockState getBlockStateForModel(ModelIdentifier modelId) {
+		return blockStateModelIds.get(modelId);
+	}
+
+	/**
+	 * Injection point: Create a CTM baked model.
+	 * Modpack core can override this to use object pools.
+	 *
+	 * @param wrapped The wrapped model
+	 * @param state The block state
+	 * @return The CTM model
+	 */
+	protected BakedModel createCtmModel(BakedModel wrapped, BlockState state) {
+		return new CtmBakedModel(wrapped, state);
+	}
+
+	/**
+	 * Injection point: Wrap a model with emissive processing.
+	 * Modpack core can override this.
+	 *
+	 * @param model The model to wrap
+	 * @return The wrapped model, or the original if no wrapping is needed
+	 */
+	protected BakedModel wrapEmissive(BakedModel model) {
+		if (wrapEmissive) {
+			return new EmissiveBakedModel(model);
 		}
 		return model;
 	}

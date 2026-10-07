@@ -31,48 +31,110 @@ public class CtmBakedModel extends ForwardingBakedModel {
 
 	@Override
 	public void emitBlockQuads(BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier, RenderContext context) {
-		if (!ContinuityConfig.INSTANCE.connectedTextures.get()) {
+		// Early exit checks (injection point 1: feature flags)
+		if (!shouldProcessCtm(state, blockView, pos)) {
 			super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
 			return;
 		}
 
 		ModelObjectsContainer container = ModelObjectsContainer.get();
-		if (!container.featureStates.getConnectedTexturesState().isEnabled()) {
-			super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
-			return;
-		}
-
 		CtmQuadTransform quadTransform = container.ctmQuadTransform;
 		if (quadTransform.isActive()) {
 			super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
 			return;
 		}
 
-		// The correct way to get the appearance of the origin state from within a block model is to (1) call
-		// getAppearance on the result of blockView.getBlockState(pos) instead of the passed state and (2) pass the
-		// pos and world state of the adjacent block as the source pos and source state.
-		// (1) is not followed here because at this point in execution, within this call to
-		// CtmBakedModel#emitBlockQuads, the state parameter must already contain the world state. Even if this
-		// CtmBakedModel is wrapped, then the wrapper must pass the same state as it received because not doing so can
-		// cause crashes when the wrapped model is a vanilla multipart model or delegates to one. Thus, getting the
-		// world state again is inefficient and unnecessary.
-		// (2) is not possible here because the appearance state is necessary to get the slice and only the processors
-		// within the slice actually perform checks on adjacent blocks. Likewise, the processors themselves cannot
-		// retrieve the appearance state since the correct processors can only be chosen with the initially correct
-		// appearance state.
-		// Additionally, the side is chosen to always be the first constant of the enum (DOWN) for simplicity. Querying
-		// the appearance for all six sides would be more correct, but less efficient. This may be fixed in the future,
-		// especially if there is an actual use case for it.
-		BlockState appearanceState = state.getAppearance(blockView, pos, Direction.DOWN, state, pos);
+		// Injection point 2: appearance state resolution
+		BlockState appearanceState = resolveAppearanceState(blockView, state, pos);
 
-		quadTransform.prepare(blockView, appearanceState, state, pos, randomSupplier, context, ContinuityConfig.INSTANCE.useManualCulling.get(), getSliceFunc(appearanceState));
+		// Injection point 3: quad transform preparation
+		prepareQuadTransform(quadTransform, blockView, appearanceState, state, pos, randomSupplier, context);
 
+		// Core processing
 		context.pushTransform(quadTransform);
 		super.emitBlockQuads(blockView, state, pos, randomSupplier, context);
 		context.popTransform();
 
+		// Output and cleanup
 		quadTransform.processingContext.outputTo(context.getEmitter());
 		quadTransform.reset();
+	}
+
+	/**
+	 * Injection point: Check if CTM processing should run.
+	 * Modpack core can override this to use cached feature states.
+	 *
+	 * @param state The block state
+	 * @param blockView The world view
+	 * @param pos The block position
+	 * @return true if CTM should process this block
+	 */
+	protected boolean shouldProcessCtm(BlockState state, BlockRenderView blockView, BlockPos pos) {
+		if (!ContinuityConfig.INSTANCE.connectedTextures.get()) {
+			return false;
+		}
+		ModelObjectsContainer container = ModelObjectsContainer.get();
+		return container.featureStates.getConnectedTexturesState().isEnabled();
+	}
+
+	/**
+	 * Injection point: Resolve the appearance state for a block.
+	 * The correct way to get the appearance of the origin state from within a block model is to (1) call
+	 * getAppearance on the result of blockView.getBlockState(pos) instead of the passed state and (2) pass the
+	 * pos and world state of the adjacent block as the source pos and source state.
+	 * (1) is not followed here because at this point in execution, within this call to
+	 * CtmBakedModel#emitBlockQuads, the state parameter must already contain the world state. Even if this
+	 * CtmBakedModel is wrapped, then the wrapper must pass the same state as it received because not doing so can
+	 * cause crashes when the wrapped model is a vanilla multipart model or delegates to one. Thus, getting the
+	 * world state again is inefficient and unnecessary.
+	 * (2) is not possible here because the appearance state is necessary to get the slice and only the processors
+	 * within the slice actually perform checks on adjacent blocks. Likewise, the processors themselves cannot
+	 * retrieve the appearance state since the correct processors can only be chosen with the initially correct
+	 * appearance state.
+	 * Additionally, the side is chosen to always be the first constant of the enum (DOWN) for simplicity. Querying
+	 * the appearance for all six sides would be more correct, but less efficient. This may be fixed in the future,
+	 * especially if there is an actual use case for it.
+	 *
+	 * @param blockView The world view
+	 * @param state The block state
+	 * @param pos The block position
+	 * @return The appearance state
+	 */
+	protected BlockState resolveAppearanceState(BlockRenderView blockView, BlockState state, BlockPos pos) {
+		return state.getAppearance(blockView, pos, Direction.DOWN, state, pos);
+	}
+
+	/**
+	 * Injection point: Prepare the quad transform.
+	 * Modpack core can override this to use alternative preparation logic.
+	 *
+	 * @param quadTransform The transform to prepare
+	 * @param blockView The world view
+	 * @param appearanceState The appearance state
+	 * @param state The block state
+	 * @param pos The block position
+	 * @param randomSupplier The random supplier
+	 * @param context The render context
+	 */
+	protected void prepareQuadTransform(
+			CtmQuadTransform quadTransform,
+			BlockRenderView blockView,
+			BlockState appearanceState,
+			BlockState state,
+			BlockPos pos,
+			Supplier<Random> randomSupplier,
+			RenderContext context
+	) {
+		quadTransform.prepare(
+				blockView,
+				appearanceState,
+				state,
+				pos,
+				randomSupplier,
+				context,
+				ContinuityConfig.INSTANCE.useManualCulling.get(),
+				getSliceFunc(appearanceState)
+		);
 	}
 
 	@Override
@@ -83,21 +145,41 @@ public class CtmBakedModel extends ForwardingBakedModel {
 		return false;
 	}
 
+	/**
+	 * Get the slice function for a block state.
+	 * Injection point: Modpack core can override this to use ModernFix's cache.
+	 * 
+	 * Uses a simpler volatile pattern instead of full DCL when the state matches the default.
+	 *
+	 * @param state The block state
+	 * @return The slice function
+	 */
 	protected Function<Sprite, QuadProcessors.Slice> getSliceFunc(BlockState state) {
 		if (state == defaultState) {
+			// Fast path: read volatile once
 			Function<Sprite, QuadProcessors.Slice> sliceFunc = defaultSliceFunc;
 			if (sliceFunc == null) {
-				synchronized (this) {
-					sliceFunc = defaultSliceFunc;
-					if (sliceFunc == null) {
-						sliceFunc = QuadProcessors.getCache(state);
-						defaultSliceFunc = sliceFunc;
-					}
-				}
+				// Slow path: compute and publish
+				sliceFunc = computeDefaultSliceFunc();
 			}
 			return sliceFunc;
 		}
+		// Non-default state: no caching
 		return QuadProcessors.getCache(state);
+	}
+
+	/**
+	 * Compute and cache the default slice function.
+	 * Synchronized to ensure only one thread computes the value.
+	 */
+	private synchronized Function<Sprite, QuadProcessors.Slice> computeDefaultSliceFunc() {
+		// Double-check inside the synchronized block
+		Function<Sprite, QuadProcessors.Slice> sliceFunc = defaultSliceFunc;
+		if (sliceFunc == null) {
+			sliceFunc = QuadProcessors.getCache(defaultState);
+			defaultSliceFunc = sliceFunc;
+		}
+		return sliceFunc;
 	}
 
 	protected static class CtmQuadTransform implements RenderContext.QuadTransform {
